@@ -1,0 +1,100 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Feb 26 23:02:53 2022
+
+@author: SARA
+"""
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import enum
+
+class DistanceType(enum.Enum):
+    Euclidean = 0,
+    Pearson = 1
+
+# reading and removing the ID column
+RawData = pd.read_csv("Customer data.csv").iloc[:, 1:]
+
+# normalized data
+data = (RawData-RawData.mean())/RawData.std()
+
+# calculate euclidean distance between two points
+def GUC_Euclidean(centroid, user):
+    return np.sum((centroid - user)**2)
+
+# return distance matrix (K centroids by No. of users)
+def GUC_Distance(centroids, data, dist_type=DistanceType.Euclidean):
+    # initializing matrix
+    mat = np.zeros([len(data), len(centroids)])
+    # looping
+    for c in range(len(centroids)):
+        for i in range(len(data)):
+            centroid = centroids[c]
+            user = data.iloc[i]
+            mat[i, c] = GUC_Euclidean(centroid, user)
+    return mat
+
+# update the centroids
+def GUC_K_mean_update(centroids, data, dist_type=DistanceType.Euclidean):
+    # distance matrix and 
+    dist_mat = GUC_Distance(centroids, data)
+    i_min = np.argmin(dist_mat, axis=1)
+    # initializing count and mean
+    c_count, c_mean = [0]*len(centroids), [None]*len(centroids)
+    for j in range(len(centroids)):
+        c_mean[j] = data.iloc[0].copy()*0
+    # looping
+    for i_u in range(len(i_min)):
+        user, c = data.iloc[i_u], i_min[i_u]
+        c_count[c] += 1
+        c_mean[c] += user
+    for c in range(len(c_count)):
+        c_mean[c] /= c_count[c]
+    return c_mean
+
+def GUC_K_mean(data, K, dist_type=DistanceType.Euclidean):
+    # generate K random centroids
+    centroids = [None]*K
+    for c in range(len(centroids)):
+        centroids[c] = data.sample(n=1).reset_index(drop=True).iloc[0]
+    # updating
+    Count = 1
+    while Count > 0.001:
+        _centroids = GUC_K_mean_update(centroids, data)
+        # new Count
+        Count = 0
+        for c, _centroid in enumerate(_centroids):
+            Count += np.sum(abs(_centroid - centroids[c]))
+        # updating centroids
+        centroids = _centroids
+        print(Count)
+    # converged
+    print("Converged!")
+    return centroids
+
+# separates users into dataframes per centroids
+def GUC_Get_Users(centroids, data):
+    dist_mat = GUC_Distance(centroids, data)
+    i_min = np.argmin(dist_mat, axis=1)
+    # new lists
+    separated = [None]*len(centroids)
+    for i in range(len(centroids)):
+        separated[i] = []
+    # separating...
+    for j in range(len(i_min)):
+        c = i_min[j]
+        separated[c].append(j)
+    # returned dataframes
+    for i in range(len(centroids)):
+        separated[i] = data.iloc[separated[i]]
+    return separated
+
+# centroids, and plotting
+centroids = GUC_K_mean(data, 5)
+separated = GUC_Get_Users(centroids, data)
+colors = ['Red', 'Blue', 'Yellow', 'Green', 'Orange']
+for i in range(len(separated)):
+    plt.scatter(separated[i]['Age'], separated[i]['Income'], color=colors[i])
+plt.show()
