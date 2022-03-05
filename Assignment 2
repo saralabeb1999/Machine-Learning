@@ -1,0 +1,102 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Mar  1 19:55:21 2022
+
+@author: SARA
+"""
+
+import numpy as np, pandas as pd, seaborn as sns, matplotlib.pyplot as plt
+from sklearn.datasets import make_blobs
+from sklearn.datasets import make_moons
+from sklearn.cluster import KMeans
+
+k=6
+Data = pd.read_csv("Customer data.csv")
+[allrows,allcolumns]=np.shape(Data)
+NewData=Data.iloc[:,1:allcolumns]
+CustomerData=pd.DataFrame(NewData).to_numpy()
+[rows,columns]=np.shape(CustomerData)
+RandomCentroids=CustomerData[np.random.choice(rows,k,replace=False)]
+Cluster_Distance=np.zeros((rows,k))
+
+def GUC_Distance ( RandomCentroids, CustomerData, Distance_Type ):
+    EucledianDistance=np.zeros([rows,k])
+    CustomersAverage=np.zeros([rows,1])
+    CentroidsAverage=np.zeros([k,1])
+    CustomerDataUpdated=np.zeros([rows,1])
+    CentroidsUpdated=np.zeros([k,1])
+    SubtractCentroids=np.zeros([k,columns])
+    SubtractCustomerData=np.zeros([rows,columns])
+    PearsonNumerator=np.zeros([rows,k])
+    PearsonDenominator=np.zeros([rows,k])
+    if(Distance_Type == 'Eucledian distance'):
+        for i in range(k):    
+            EucledianDistance[:,i] = ((CustomerData-RandomCentroids[i])**2).sum(axis=1)
+            Cluster_Distance=EucledianDistance           
+    else:
+        CustomersAverage=np.average(CustomerData,axis=1)
+        CentroidsAverage=np.average(RandomCentroids,axis=1)
+        for r in range(rows):
+           SubtractCustomerData[r]=CustomerData[r]-CustomersAverage[r] 
+        for w in range(k):
+           SubtractCentroids[w]=RandomCentroids[w]-CentroidsAverage[w]
+        for x in range(rows):
+           CustomerDataUpdated[x]=((CustomerData[x]-CustomersAverage[x])**2).sum()
+        for n in range(k):
+           CentroidsUpdated[n]=((RandomCentroids[n]-CentroidsAverage[n])**2).sum()
+        for q in range(k):
+           for t in range(rows): 
+               PearsonNumerator[t,q]=(SubtractCustomerData[t]* SubtractCentroids[q]).sum()
+               PearsonDenominator[t,q]=np.sqrt(CustomerDataUpdated[t]*CentroidsUpdated[q])
+        Cluster_Distance=1-(PearsonNumerator/PearsonDenominator)
+    return Cluster_Distance
+
+
+def GUC_Kmean (CustomerData,k,Distance_Type ):
+    ClusterUsersCount=np.zeros(k)
+    ClusterUsersUpdated=np.zeros([k,columns])
+    CentroidsUpdated=np.zeros([k,columns])
+    JFunction=0
+    Jfunction_initial=-1
+    
+    for o in range(100):
+        RandomCentroids=CustomerData[np.random.choice(rows,k,replace=False)]
+        while True:
+            Cluster_DistanceRet=GUC_Distance ( RandomCentroids, CustomerData, 'Eucledian distance' )
+            MinDistanceIndex=np.argmin(Cluster_DistanceRet,axis=1)
+            MinDistance=np.min(Cluster_DistanceRet,axis=1)
+            ClusterDistanceUpdated=MinDistance
+            for m in range(k):
+                for n in range(rows):
+                    if MinDistanceIndex[n]==m:
+                        JFunction=JFunction+((((CustomerData[n]-RandomCentroids[m])**2)).sum())
+                        ClusterUsersCount[m]=ClusterUsersCount[m]+1
+                        ClusterUsersUpdated[m]=ClusterUsersUpdated[m]+CustomerData[n]
+                CentroidsUpdated[m]=ClusterUsersUpdated[m]/ClusterUsersCount[m]
+                JFunction=JFunction/rows
+            if JFunction==Jfunction_initial:
+                break
+            else:
+                Jfunction_initial=JFunction 
+            if o==0:
+                min_JFunction=JFunction
+            if JFunction<min_JFunction:
+                min_JFunction=JFunction
+                RandomCentroids=CentroidsUpdated
+                return [ClusterDistanceUpdated, min_JFunction, MinDistanceIndex ]
+    
+    
+
+(ClusterDistanceUpdated,min_JFunction,minindex)=GUC_Kmean(CustomerData, k, 'Eucledian distance')
+df = pd.DataFrame(dict(x=CustomerData[:,2], y=CustomerData[:,4], label=minindex.astype(int)))
+colors = {0:'blue', 1:'orange', 2:'green',3:'red',4:'olive',5:'yellow',6:'pink'}
+fig, ax = plt.subplots(figsize=(8, 8))
+grouped = df.groupby('label')
+for key, group in grouped:
+    group.plot(ax=ax, kind='scatter', x='x', y='y', label=key, color=colors[key])
+ax.scatter(RandomCentroids[:, 2],RandomCentroids[:, 4], marker='*', s=150, c='#ff2222')
+plt.xlabel('X_1')
+plt.ylabel('X_2')
+plt.show()    
+    
+
