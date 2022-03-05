@@ -5,12 +5,6 @@ Created on Sat Mar  5 23:11:32 2022
 @author: SARA
 """
 
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Mar  1 19:55:21 2022
-
-@author: SARA
-"""
 
 import numpy as np, pandas as pd, seaborn as sns, matplotlib.pyplot as plt
 from sklearn.datasets import make_blobs
