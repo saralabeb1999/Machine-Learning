@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Sat Mar  5 23:11:32 2022
+
+@author: SARA
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Tue Mar  1 19:55:21 2022
 
 @author: SARA
@@ -10,7 +17,7 @@ from sklearn.datasets import make_blobs
 from sklearn.datasets import make_moons
 from sklearn.cluster import KMeans
 
-k=6
+k=5
 Data = pd.read_csv("Customer data.csv")
 [allrows,allcolumns]=np.shape(Data)
 NewData=Data.iloc[:,1:allcolumns]
@@ -99,4 +106,16 @@ plt.xlabel('X_1')
 plt.ylabel('X_2')
 plt.show()    
     
+
+
+wcss_list=[] 
+for i in range(1, 11):  
+    kmeans = KMeans(n_clusters=i, init='k-means++', random_state= 42)  
+    kmeans.fit(CustomerData)  
+    wcss_list.append(kmeans.inertia_)  
+plt.plot(range(1, 11), wcss_list)  
+plt.title('The Elobw Method Graph')  
+plt.xlabel('Number of clusters(k)')  
+plt.ylabel('wcss_list')  
+plt.show()
 
