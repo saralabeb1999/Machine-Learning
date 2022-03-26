@@ -1,0 +1,58 @@
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.datasets import load_iris
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas  as  pd
+import seaborn as sns 
+import  matplotlib.pyplot as  plt 
+import numpy  as  np #matplotlib inline 
+from sklearn.preprocessing import StandardScaler
+from sklearn import preprocessing
+from sklearn.metrics import confusion_matrix
+
+csv_file=pd.read_csv('Classified Data')
+eydo=csv_file
+scaler = StandardScaler()
+scaler.fit(csv_file.drop('TARGET CLASS',axis=1)) 
+scaled_features = scaler.transform(csv_file.drop('TARGET CLASS',axis=1))
+scaled_features = pd.DataFrame(scaled_features,columns=csv_file.columns[:-1])
+scaled_features.head()
+X = scaled_features 
+y = csv_file['TARGET CLASS'] 
+
+X_train, X_remaining, Y_train, Y_remaining = train_test_split(scaled_features,csv_file['TARGET CLASS'], test_size=0.4, random_state=101) 
+
+X_CV , X_test=np.split(X_remaining, 2)
+Y_CV , Y_test=np.split(Y_remaining, 2)
+
+k=99
+accuracy=[]
+
+for i in range (1,k):
+    KNN_output = KNeighborsClassifier(n_neighbors=i)
+    KNN_output.fit(X_train, Y_train)
+    predicted= KNN_output.predict(X_CV)
+    accuracy.append(np.mean(predicted != Y_CV))
+
+K_best=np.argmin(accuracy)
+
+plt.figure(figsize=(12, 6))
+plt.plot(range(1, k), accuracy, color='red', linestyle='dashed', marker='o', markerfacecolor='blue', markersize=10)
+plt.title('Error Rate K Value')
+plt.xlabel('K ')
+plt.ylabel('CV Error')
+
+
+knn = KNeighborsClassifier(n_neighbors=K_best)
+knn.fit(X_train, Y_train)
+predicted = knn.predict(X_test)
+print (confusion_matrix(Y_test, predicted))
+print(knn.score(X_test, Y_test))
+
+
+
+
+
+
+
